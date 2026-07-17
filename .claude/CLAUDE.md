@@ -5,16 +5,16 @@ VSCode 扩展：实时监控渲染进程 CPU，超阈值告警并一键抓取调
 ## commit skill 检测缓存
 
 <!-- commit-skill: readme-standard = ok -->
-- README 中英双语 + LOGO + 徽章 + 版权署名：已就绪（2026-07-16 确认；logo.svg 副标题中文已改英文）
+- README 中英双语 + LOGO + 徽章 + 版权署名：已就绪（2026-07-17 确认；logo.svg 副标题中文已改英文）
 
 <!-- commit-skill: license = ok -->
-- LICENSE.md：已存在（MIT，版权人 All Contributors，无冗余，2026-07-16 确认）
+- LICENSE.md：已存在（MIT，版权人 All Contributors，无冗余，2026-07-17 确认）
 
 <!-- commit-skill: github-about = ok -->
-- GitHub About：已配置（双语 description + 8 个 topics，2026-07-16）
+- GitHub About：已配置（双语 description + 8 个 topics，2026-07-17）
 
 <!-- commit-skill: attribution-name = ok -->
-- 版权人/署名引用：已归一为 All Contributors（三份文件无具体个人名，2026-07-16 确认）
+- 版权人/署名引用：已归一为 All Contributors（三份文件无具体个人名，2026-07-17 确认）
 
 <!-- commit-skill: automemory = ok -->
-- AutoMemory 目录：已配置到 .claude/memory/（settings.local.json + example + .gitignore 就位，2026-07-16 确认）
+- AutoMemory 目录：已配置到 .claude/memory/（settings.local.json + example + .gitignore 就位，2026-07-17 确认）
