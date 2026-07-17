@@ -10,25 +10,26 @@
 
 # Resource Monitor
 
-> VSCode 扩展：实时监控渲染进程 CPU，超阈值告警并一键抓取调用栈，定位 V8/GC、Blink 重绘或扩展 webview 热点。
+> VSCode 扩展：监控整台 Mac（CPU / 内存 / 磁盘 / GPU），用 AI 把数据翻译成可勾选的清理动作（卸载扩展、清缓存、结束进程），勾选确认后由扩展安全执行。
 
 [English](README.md)
 
 ## 为什么需要
 
-8GB 内存的小机器跑 VSCode（或 Trae 等 fork）偶尔卡顿，元凶往往在「渲染进程」之间游走——一会儿这个 renderer 飙到 200%，一会儿换另一个。本扩展持续盯住所有渲染进程，谁飙高就告警并抓栈，让卡顿可被归因。
+8GB 内存的小机器跑 VSCode（或 Trae 等 fork）偶尔卡顿，元凶在整台机器之间游走——一会儿 CPU、一会儿内存压力、一会儿是某个扩展的缓存膨胀。光看数字不知道「该删什么」。本扩展盯住整台机器，并由 AI 助手把快照翻译成具体、可执行的清理步骤，你勾选后一键跑掉。
 
 ## 功能
 
-- **状态栏实时显示**：当前最吃 CPU 的渲染进程（`编辑器:PID CPU%`）
-- **超阈值告警**：单个渲染进程 CPU 超过阈值时弹通知，可一键抓栈
-- **一键抓栈**：调用 macOS `sample` 抓取目标进程调用栈，写入文件
-- **冷却节流**：同一进程在冷却时间内不重复告警，避免轰炸
+- **整机仪表盘**：编辑器区面板实时显示 CPU / 内存 / 磁盘 / GPU，含占用最高的进程
+- **AI 清理建议**：把快照发给你的模型（z.ai / GLM 走 Anthropic 兼容端点，或任意 OpenAI 兼容端点），拿回一份可勾选的清理清单——每条带原因、风险等级、可直接执行的命令
+- **勾选即安全执行**：挑你信得过的建议，确认后扩展执行。每条命令都过严格白名单（卸载扩展 / 清具体 `globalStorage` 缓存 / kill 进程），`rm -rf /`、管道注入、越界路径一律拒绝
+- **阈值与告警间隔可调**：CPU / 内存 / 磁盘阈值和告警间隔都能在面板上调，附带建议值和取值范围
+- **两个入口**：状态栏告警的「查看详情」、左侧栏扩展图标，都能打开面板
 
 ## 平台要求
 
-- **macOS**（依赖 `ps` 与 `sample`）
-- `sample` 命令需 Xcode 命令行工具：`xcode-select --install`
+- **macOS**（用系统自带的 `top` / `ps` / `df` / `ioreg` / `system_profiler`，无需 `sudo`、无需 Xcode 命令行工具）
+- 进程级 GPU 占用和 GPU 功耗无 sudo 读不到，面板如实标注「不支持」，不硬编
 
 ## 快速开始（开发调试）
 
@@ -50,34 +51,31 @@ npm run package
 
 | 命令 | 说明 |
 |---|---|
-| Resource Monitor: 开始监控 | 启动巡检 |
-| Resource Monitor: 停止监控 | 停止巡检 |
-| Resource Monitor: 抓取最吃 CPU 的渲染进程 | 手动抓栈（状态栏点击同此） |
-| Resource Monitor: 打开抓栈产物目录 | 在 Finder 中打开 |
+| Resource Monitor: 打开资源面板 | 打开资源仪表盘 |
+| Resource Monitor: 开始 / 停止监控 | 启动 / 停止巡检 |
+| Resource Monitor: 立即诊断（AI 清理建议） | 采集快照并让 AI 给出清理建议 |
+| Resource Monitor: 设置 API Key | 录入 AI 接口 key（SecretStorage 加密存储） |
 
 ## 配置
 
 | 项 | 默认 | 说明 |
 |---|---|---|
-| `resourceMonitor.threshold` | `100` | 触发告警的 CPU% 阈值 |
-| `resourceMonitor.interval` | `3` | 巡检间隔（秒） |
-| `resourceMonitor.sampleDuration` | `3` | 抓栈时长（秒） |
-| `resourceMonitor.alertCooldown` | `30` | 同进程告警冷却（秒） |
-| `resourceMonitor.captureToWorkspace` | `false` | 抓栈产物是否写工作区目录（`./resource-monitor-captures`） |
+| `resourceMonitor.interval` | `5` | 巡检间隔（秒） |
+| `resourceMonitor.alertCooldown` | `300` | 同一资源项两次告警的最小间隔（秒，面板可调） |
+| `resourceMonitor.threshold.cpuTotal` | `75` | 整机 CPU% 告警阈值（高于） |
+| `resourceMonitor.threshold.cpuProcess` | `80` | 单进程 CPU% 告警阈值（高于） |
+| `resourceMonitor.threshold.memoryFree` | `20` | 内存可用率% 告警阈值（低于） |
+| `resourceMonitor.threshold.diskUsed` | `85` | 磁盘使用率% 告警阈值（高于） |
+| `resourceMonitor.ai.baseUrl` | `https://api.z.ai/api/anthropic` | AI 接口 Base URL |
+| `resourceMonitor.ai.model` | `glm-5.2` | AI 模型 ID |
+| `resourceMonitor.ai.protocol` | `anthropic` | `anthropic` 或 `openai` |
 
-## 抓栈结果怎么读
+## 工作原理
 
-打开 capture 文件，看 `Sort by: cpu` 的热点函数前缀：
-
-- `v8::` / `CollectGarbage` / `Heap` → **V8 GC 风暴**（通常指向内存压力）
-- `blink::` / `Paint` / `Layout` / `Compositing` → **Blink 重绘/重排**（webview 频繁刷新、大文件、复杂装饰）
-- 出现特定扩展名 → 锁定到该扩展
-
-## 实现要点
-
-- `src/monitor.ts`：`ps` 巡检循环 + 状态栏
-- `src/alerter.ts`：带冷却的告警（按 pid 记忆）
-- `src/sampler.ts`：调用 `sample` 抓栈并落盘
+- 采集器（`src/collectors/`）通过 shell 命令读取 CPU / 内存 / 磁盘 / GPU / VSCode 进程——零运行时依赖
+- `src/ai/` 用 Node 18 自带 `fetch` 直调你的模型，API key 存 `SecretStorage`，不落配置、不入日志
+- `src/cleaner.ts` 是安全闸：执行前用命令白名单拒绝一切危险操作
+- 完整设计、能力边界和安全模型见 [DESIGN.md](DESIGN.md)
 
 ## 版权与署名
 
@@ -88,6 +86,6 @@ npm run package
 **引用本项目**：
 
 ```
-Resource Monitor — VSCode 渲染进程 CPU 监控扩展。
+Resource Monitor — VSCode 整机资源监控与 AI 辅助清理扩展。
 https://github.com/xhqing/ResourceMonitor
 ```

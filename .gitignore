@@ -7,3 +7,5 @@ out/
 resource-monitor-captures/
 # Claude Code 本地配置（AutoMemory 路径为本机绝对路径，不入库；模板见 settings.local.example.json）
 .claude/settings.local.json
+# 临时产物（图标转换、验证等一次性文件）
+tmp/

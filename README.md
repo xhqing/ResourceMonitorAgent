@@ -10,25 +10,26 @@
 
 # Resource Monitor
 
-> VSCode extension that monitors renderer-process CPU in real time, alerts on threshold breach, and captures call stacks in one click to pinpoint V8/GC, Blink repaint, or extension webview hotspots.
+> VSCode extension that monitors your whole Mac (CPU / memory / disk / GPU), uses AI to turn the numbers into checkable cleanup actions (uninstall an extension, clear a cache, kill a process), and executes the ones you pick — safely.
 
 [中文](README_cn.md)
 
 ## Why
 
-Small machines with 8GB RAM running VSCode (or forks like Trae) occasionally stutter, and the culprit often roams across renderer processes — one renderer spikes to 200%, then another. This extension keeps watch over all renderer processes, alerts and captures stacks from whichever spikes, so the stuttering can be attributed.
+Small Macs (8 GB RAM) stutter under VSCode / Trae, and the culprit roams across the whole machine — CPU one moment, memory pressure or a bloated extension cache the next. Raw numbers don't tell you what to *do*. This extension watches the whole machine, and an AI assistant translates the snapshot into concrete, executable cleanup steps you can tick and run in one click.
 
 ## Features
 
-- **Live status bar**: the most CPU-hungry renderer (`Editor:PID CPU%`)
-- **Threshold alerts**: notify when a single renderer's CPU exceeds the threshold, with one-click stack capture
-- **One-click stack capture**: invokes macOS `sample` to capture the target process's call stack to a file
-- **Cooldown throttling**: no repeated alerts for the same process within the cooldown window
+- **Whole-machine dashboard**: live CPU / memory / disk / GPU, plus top processes — in an editor-side panel
+- **AI cleanup suggestions**: send the snapshot to your model (z.ai / GLM via the Anthropic-compatible endpoint, or any OpenAI-compatible endpoint), get back a checkable list of actions with reasons, risk levels, and ready-to-run commands
+- **Tick and run, safely**: pick the suggestions you trust, confirm, and the extension executes them. Every command passes a strict allowlist (uninstall extension / clear a specific `globalStorage` cache / kill a pid); `rm -rf /`, pipe injection, and out-of-scope paths are refused
+- **Adjustable thresholds & alert cooldown**: tune CPU / memory / disk thresholds and the alert interval right in the panel, with suggested values and ranges
+- **Two entry points**: the status-bar alert's "View details" and the Activity Bar icon both open the panel
 
 ## Platform requirements
 
-- **macOS** (depends on `ps` and `sample`)
-- `sample` requires Xcode Command Line Tools: `xcode-select --install`
+- **macOS** (uses built-in `top` / `ps` / `df` / `ioreg` / `system_profiler` — no `sudo`, no Xcode Command Line Tools)
+- Process-level GPU usage and GPU power are not readable without `sudo` — the panel marks them "unsupported" honestly rather than guessing
 
 ## Quick start (development)
 
@@ -50,34 +51,31 @@ npm run package
 
 | Command | Description |
 |---|---|
-| Resource Monitor: Start Monitoring | Start polling |
-| Resource Monitor: Stop Monitoring | Stop polling |
-| Resource Monitor: Sample top CPU renderer | Manual stack capture (same as status bar click) |
-| Resource Monitor: Open captures folder | Open in Finder |
+| Resource Monitor: Open Panel | Open the resource dashboard |
+| Resource Monitor: Start / Stop Monitoring | Start / stop polling |
+| Resource Monitor: Diagnose (AI cleanup) | Collect a snapshot and ask the AI for cleanup suggestions |
+| Resource Monitor: Set API Key | Store your AI API key (encrypted via SecretStorage) |
 
 ## Configuration
 
 | Option | Default | Description |
 |---|---|---|
-| `resourceMonitor.threshold` | `100` | CPU% threshold to trigger an alert |
-| `resourceMonitor.interval` | `3` | Polling interval (seconds) |
-| `resourceMonitor.sampleDuration` | `3` | Stack sampling duration (seconds) |
-| `resourceMonitor.alertCooldown` | `30` | Per-process alert cooldown (seconds) |
-| `resourceMonitor.captureToWorkspace` | `false` | Write captures to a workspace folder (`./resource-monitor-captures`) |
+| `resourceMonitor.interval` | `5` | Polling interval (seconds) |
+| `resourceMonitor.alertCooldown` | `300` | Min seconds between alerts on the same metric (panel-adjustable) |
+| `resourceMonitor.threshold.cpuTotal` | `75` | Whole-machine CPU % that triggers an alert (above) |
+| `resourceMonitor.threshold.cpuProcess` | `80` | Single-process CPU % that triggers an alert (above) |
+| `resourceMonitor.threshold.memoryFree` | `20` | Free memory % that triggers an alert (below) |
+| `resourceMonitor.threshold.diskUsed` | `85` | Disk usage % that triggers an alert (above) |
+| `resourceMonitor.ai.baseUrl` | `https://api.z.ai/api/anthropic` | AI endpoint base URL |
+| `resourceMonitor.ai.model` | `glm-5.2` | AI model id |
+| `resourceMonitor.ai.protocol` | `anthropic` | `anthropic` or `openai` |
 
-## Reading capture results
+## How it works
 
-Open the capture file and look at the `Sort by: cpu` hot function prefixes:
-
-- `v8::` / `CollectGarbage` / `Heap` → **V8 GC storm** (usually points to memory pressure)
-- `blink::` / `Paint` / `Layout` / `Compositing` → **Blink repaint/reflow** (frequent webview refresh, large files, complex decorations)
-- A specific extension name → pinpoints that extension
-
-## Implementation notes
-
-- `src/monitor.ts`: `ps` polling loop + status bar
-- `src/alerter.ts`: cooldown-aware alerts (per-pid memory)
-- `src/sampler.ts`: invokes `sample` to capture stacks and persist them
+- Collectors (`src/collectors/`) read CPU / memory / disk / GPU / VSCode processes via shell commands — zero runtime dependencies
+- `src/ai/` calls your model directly (Node 18 `fetch`); the API key lives in `SecretStorage`, never in settings or logs
+- `src/cleaner.ts` is the safety gate: a command allowlist that refuses anything dangerous before execution
+- See [DESIGN.md](DESIGN.md) for the full design, capability boundaries, and safety model
 
 ## License & Attribution
 
@@ -88,6 +86,6 @@ Copyright (c) 2026 All Contributors. Licensed under the [MIT License](LICENSE.md
 **Citing this project**:
 
 ```
-Resource Monitor — VSCode extension for renderer-process CPU monitoring.
+Resource Monitor — VSCode extension for whole-machine resource monitoring and AI-assisted cleanup.
 https://github.com/xhqing/ResourceMonitor
 ```

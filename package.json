@@ -1,7 +1,7 @@
 {
   "name": "resource-monitor",
   "displayName": "Resource Monitor",
-  "description": "实时监控 VSCode 渲染进程 CPU，超阈值告警并一键抓取调用栈，定位 V8/GC、Blink 重绘或扩展 webview 热点。",
+  "description": "实时监控整机 CPU、内存、磁盘、GPU，AI 给出可勾选的清理建议并一键执行。",
   "version": "0.0.1",
   "publisher": "xhqing",
   "license": "MIT",
@@ -19,6 +19,11 @@
   "contributes": {
     "commands": [
       {
+        "command": "resourceMonitor.openPanel",
+        "title": "打开资源面板",
+        "category": "Resource Monitor"
+      },
+      {
         "command": "resourceMonitor.start",
         "title": "开始监控",
         "category": "Resource Monitor"
@@ -29,48 +34,89 @@
         "category": "Resource Monitor"
       },
       {
-        "command": "resourceMonitor.sampleTopProcess",
-        "title": "抓取最吃 CPU 的渲染进程",
+        "command": "resourceMonitor.diagnose",
+        "title": "立即诊断（AI 清理建议）",
         "category": "Resource Monitor"
       },
       {
-        "command": "resourceMonitor.openCaptures",
-        "title": "打开抓栈产物目录",
+        "command": "resourceMonitor.setApiKey",
+        "title": "设置 API Key",
         "category": "Resource Monitor"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "resourceMonitor",
+          "title": "Resource Monitor",
+          "icon": "assets/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "resourceMonitor": [
+        {
+          "id": "resourceMonitor.entry",
+          "name": "资源监控"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "resourceMonitor.entry",
+        "contents": "打开资源监控面板，查看整机 CPU / 内存 / 磁盘 / GPU 与 AI 清理建议。\n[打开资源监控面板](command:resourceMonitor.openPanel)"
       }
     ],
     "configuration": {
       "title": "Resource Monitor",
       "properties": {
-        "resourceMonitor.threshold": {
-          "type": "number",
-          "default": 100,
-          "minimum": 1,
-          "description": "触发告警的 CPU 百分比阈值（针对单个渲染进程）。"
-        },
         "resourceMonitor.interval": {
           "type": "number",
-          "default": 3,
+          "default": 5,
           "minimum": 1,
           "description": "巡检间隔（秒）。"
         },
-        "resourceMonitor.sampleDuration": {
-          "type": "number",
-          "default": 3,
-          "minimum": 1,
-          "maximum": 30,
-          "description": "抓取调用栈的采样时长（秒）。"
-        },
         "resourceMonitor.alertCooldown": {
           "type": "number",
-          "default": 30,
+          "default": 300,
           "minimum": 0,
-          "description": "同一进程两次告警之间的冷却时间（秒），避免轰炸。"
+          "description": "同一资源项两次告警之间的最小间隔（秒），避免频繁打扰。默认 300（5 分钟）。"
         },
-        "resourceMonitor.captureToWorkspace": {
-          "type": "boolean",
-          "default": false,
-          "description": "抓栈产物存到工作区目录（./resource-monitor-captures）。默认存扩展私有目录，不污染工作区。"
+        "resourceMonitor.threshold.cpuTotal": {
+          "type": "number",
+          "default": 75,
+          "description": "整机 CPU 占用告警阈值（%），高于此值告警。"
+        },
+        "resourceMonitor.threshold.cpuProcess": {
+          "type": "number",
+          "default": 80,
+          "description": "单进程 CPU 告警阈值（%），高于此值告警。"
+        },
+        "resourceMonitor.threshold.memoryFree": {
+          "type": "number",
+          "default": 20,
+          "description": "内存可用率告警阈值（%），低于此值告警。"
+        },
+        "resourceMonitor.threshold.diskUsed": {
+          "type": "number",
+          "default": 85,
+          "description": "磁盘使用率告警阈值（%），高于此值告警。"
+        },
+        "resourceMonitor.ai.baseUrl": {
+          "type": "string",
+          "default": "https://api.z.ai/api/anthropic",
+          "description": "AI 接口 Base URL（默认 z.ai 的 Anthropic 兼容端点）。"
+        },
+        "resourceMonitor.ai.model": {
+          "type": "string",
+          "default": "glm-5.2",
+          "description": "AI 模型 ID。"
+        },
+        "resourceMonitor.ai.protocol": {
+          "type": "string",
+          "enum": ["anthropic", "openai"],
+          "default": "anthropic",
+          "description": "AI 接口协议：anthropic（/v1/messages）或 openai（兼容）。"
         }
       }
     }
