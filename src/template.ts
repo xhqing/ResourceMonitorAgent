@@ -87,9 +87,9 @@ export function buildHtml(data: HtmlData): string {
   <h2>AI 清理建议</h2>
   <div style="margin-bottom:10px">
     <button id="diagnose">立即诊断</button>
-    <button id="clean">执行勾选清理</button>
+    <button id="clean" hidden>清理勾选</button>
   </div>
-  <div id="suggestions"><span class="placeholder">点击「立即诊断」，AI 会依据上面的资源数据给出可勾选的清理建议。勾选后点「执行勾选清理」。</span></div>
+  <div id="suggestions"><span class="placeholder">点击「立即诊断」，AI 会依据上面的资源数据给出可勾选的清理建议。勾选后点「清理勾选」。</span></div>
   <div id="cleanResults" style="margin-top:10px"></div>
 </section>
 
@@ -153,7 +153,9 @@ export function buildHtml(data: HtmlData): string {
 
   function renderSug(items) {
     const box = $('suggestions'); box.innerHTML = '';
-    if (!items || !items.length) { box.innerHTML = '<span class="placeholder">暂无建议，资源状态良好。</span>'; return; }
+    const cleanBtn = $('clean');
+    if (!items || !items.length) { box.innerHTML = '<span class="placeholder">暂无建议，资源状态良好。</span>'; if (cleanBtn) cleanBtn.hidden = true; return; }
+    if (cleanBtn) cleanBtn.hidden = false;
     items.forEach((it) => {
       const div = document.createElement('div'); div.className = 'item';
       const riskCls = it.risk === 'high' ? 'risk-high' : (it.risk === 'medium' ? 'risk-medium' : '');

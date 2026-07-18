@@ -70,7 +70,7 @@ export class PanelController {
     }
   }
 
-  // 执行勾选的清理项：每条都二次确认（high risk 用模态框），再过白名单执行。
+  // 执行勾选的清理项：点击按钮即确认，不再二次弹窗，直接过白名单执行。
   private async runClean(commands: string[]) {
     const picked = commands
       .map((cmd) => this.suggestions.find((s) => s.command === cmd))
@@ -82,15 +82,6 @@ export class PanelController {
 
     const results: CleanResult[] = [];
     for (const s of picked) {
-      const confirm = await vscode.window.showWarningMessage(
-        `${s.risk === 'high' ? '⚠️ 高风险' : '确认执行'}：${s.title}\n命令：${s.command}${s.impact ? '\n影响：' + s.impact : ''}`,
-        { modal: s.risk === 'high' },
-        '执行',
-      );
-      if (confirm !== '执行') {
-        results.push({ title: s.title, command: s.command, success: false, output: '已跳过（用户取消）' });
-        continue;
-      }
       results.push(await executeClean(s));
     }
 
