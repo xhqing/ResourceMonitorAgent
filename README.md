@@ -12,7 +12,7 @@
 
 > VSCode extension that monitors your whole Mac (CPU / memory / disk / GPU), uses AI to turn the numbers into checkable cleanup actions (uninstall an extension, clear a cache, kill a process), and executes the ones you pick — safely.
 
-[中文](README_cn.md)
+[简体中文](README_cn.md)
 
 ## Why
 
