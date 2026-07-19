@@ -47,6 +47,7 @@ export function buildHtml(data: HtmlData): string {
   .setting .desc { font-size: 11px; opacity: 0.6; }
   button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; margin-right: 8px; }
   button:hover { background: var(--vscode-button-hoverBackground); }
+  button:disabled { opacity: 0.5; cursor: default; }
   .placeholder { opacity: 0.6; font-size: 12px; }
   .item { display:flex; align-items:flex-start; gap:8px; padding:10px; border-radius:8px; background: var(--vscode-editor-inset-background); margin-bottom:8px; }
   .item code { display:block; font-size:11px; opacity:0.75; margin-top:4px; word-break: break-all; }
@@ -65,20 +66,14 @@ export function buildHtml(data: HtmlData): string {
     <div class="card"><div class="label">整机 CPU</div><div class="value" id="cpu">--</div><div class="sub" id="cpu-sub"></div><div class="bar"><i id="cpu-bar" style="width:0"></i></div></div>
     <div class="card"><div class="label">内存占用</div><div class="value" id="mem">--</div><div class="sub" id="mem-sub"></div><div class="bar"><i id="mem-bar" style="width:0"></i></div></div>
     <div class="card"><div class="label">磁盘使用</div><div class="value" id="disk">--</div><div class="sub" id="disk-sub"></div><div class="bar"><i id="disk-bar" style="width:0"></i></div></div>
-    <div class="card"><div class="label">GPU</div><div class="value" id="gpu">--</div><div class="sub" id="gpu-sub"></div></div>
   </div>
-</section>
-
-<section>
-  <h2>进程占用 Top（CPU）</h2>
-  <table><thead><tr><th>进程</th><th class="num">CPU</th><th>PID</th></tr></thead><tbody id="procs"></tbody></table>
 </section>
 
 <section>
   <h2>阈值与告警设置</h2>
   ${slider(t.cpuTotal, thresholds.cpuTotal, 'cpuTotal', 'threshold')}
   ${slider(t.cpuProcess, thresholds.cpuProcess, 'cpuProcess', 'threshold')}
-  ${slider(t.memoryFree, thresholds.memoryFree, 'memoryFree', 'threshold')}
+  ${slider(t.memoryUsed, thresholds.memoryUsed, 'memoryUsed', 'threshold')}
   ${slider(t.diskUsed, thresholds.diskUsed, 'diskUsed', 'threshold')}
   ${slider(ALERT_COOLDOWN_META, cooldown, 'alertCooldown', 'cooldown')}
 </section>
@@ -120,7 +115,15 @@ export function buildHtml(data: HtmlData): string {
     if (msg.type === 'snapshot') render(msg.snap);
     else if (msg.type === 'suggestions') renderSug(msg.items);
     else if (msg.type === 'cleanResults') renderResults(msg.results);
+    else if (msg.type === 'diagnoseStatus') setDiagState(msg.state);
   });
+
+  function setDiagState(state) {
+    const btn = $('diagnose');
+    if (state === 'sampling') { btn.textContent = '采集数据中…'; btn.disabled = true; }
+    else if (state === 'analyzing') { btn.textContent = 'AI 分析中…'; btn.disabled = true; }
+    else { btn.textContent = '立即诊断'; btn.disabled = false; }
+  }
 
   function render(s) {
     $('ts').textContent = '更新于 ' + new Date(s.timestamp).toLocaleTimeString();
@@ -137,18 +140,6 @@ export function buildHtml(data: HtmlData): string {
     let dv;
     (s.disk.volumes || []).forEach((v) => { if (!dv || v.usedPercent > dv.usedPercent) dv = v; });
     if (dv) { $('disk').textContent = dv.usedPercent + '%'; $('disk-sub').textContent = dv.mount + ' · ' + fmtBytes(dv.usedBytes) + '/' + fmtBytes(dv.totalBytes); $('disk-bar').style.width = dv.usedPercent + '%'; }
-
-    if (s.gpu.devicePercent !== undefined && s.gpu.devicePercent !== null) {
-      $('gpu').textContent = Math.max(s.gpu.devicePercent||0, s.gpu.rendererPercent||0, s.gpu.tilerPercent||0) + '%';
-    } else { $('gpu').textContent = '—'; }
-    $('gpu-sub').textContent = s.gpu.model ? (s.gpu.model + (s.gpu.cores ? ' · ' + s.gpu.cores + ' 核' : '')) : '当前机型不支持无 sudo 读取';
-
-    const tb = $('procs'); tb.innerHTML = '';
-    (s.cpu.topProcesses || []).slice(0, 8).forEach((p) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + esc(shortName(p.command)) + '</td><td class="num">' + Math.round(p.cpu) + '%</td><td>' + p.pid + '</td>';
-      tb.appendChild(tr);
-    });
   }
 
   function renderSug(items) {

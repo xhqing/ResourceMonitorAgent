@@ -1,7 +1,7 @@
 import { Snapshot } from '../snapshot';
 
 // 系统提示：要求模型只输出 JSON 数组、用规范命令、守安全底线、诚实标注归因把握。
-export const SYSTEM_PROMPT = `你是 macOS 资源清理助手。用户会给你一份整机资源快照（CPU、内存、磁盘、GPU、占用最高的进程、各 VSCode 扩展的缓存大小、有独立子进程的扩展及其 CPU）。
+export const SYSTEM_PROMPT = `你是 macOS 资源清理助手。用户会给你一份整机资源快照（CPU、内存、磁盘、占用最高的进程、各 VSCode 扩展的缓存大小、有独立子进程的扩展及其 CPU）。
 
 任务：根据快照给出「具体、可执行」的清理建议，帮用户降低资源占用。
 
@@ -66,8 +66,6 @@ ${topMem || '  (无)'}
 ${volumes || '  (无)'}
 扩展缓存（globalStorage，仅列 >1MB）：
 ${extStorage || '  (无)'}
-
-- GPU：${snap.gpu.supported ? `${snap.gpu.model ?? ''} ${snap.gpu.cores ?? 0}核，利用率 ${snap.gpu.devicePercent ?? 0}%` : '当前机型不支持读取'}
 
 - 有独立子进程的 VSCode 扩展（CPU）：
 ${extProcs || '  (无)'}

@@ -4,6 +4,18 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.2] - 2026-07-19
+
+调整内存告警语义（从「可用率低于阈值」改为「使用率高于阈值」），并移除整机 GPU 监控。
+
+### Changed
+
+- **内存告警口径改为使用率**：配置项从 `resourceMonitor.threshold.memoryFree`（可用率，默认 20%，低于此值告警）改为 `resourceMonitor.threshold.memoryUsed`（使用率，默认 80%，高于此值告警）；告警判定、快照采集、面板展示、AI 诊断 prompt 同步改为按「使用率」口径。属于不兼容的配置项改名，已配置 `memoryFree` 的用户需改用 `memoryUsed`。
+
+### Removed
+
+- **移除整机 GPU 占用采集**：删除 `src/collectors/gpu.ts` 及面板上的 GPU 展示。Apple Silicon 需读 `AGXAccelerator`、Intel 机型读不到，跨机型稳定性与一致性差，故移除。
+
 ## [0.2.1] - 2026-07-19
 
 修复扩展采集时反复在 Dock 弹出 VSCode 图标的问题。

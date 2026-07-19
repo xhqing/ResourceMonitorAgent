@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Snapshot } from './snapshot';
 import { Thresholds, THRESHOLD_META } from './config';
 
-export type AlertDimension = 'cpuTotal' | 'cpuProcess' | 'memoryFree' | 'diskUsed';
+export type AlertDimension = 'cpuTotal' | 'cpuProcess' | 'memoryUsed' | 'diskUsed';
 
 export interface AlertReason {
   dimension: AlertDimension;
@@ -22,8 +22,9 @@ export function evaluateAlerts(snap: Snapshot, t: Thresholds): AlertReason[] {
   if (top && top.cpu >= t.cpuProcess) {
     reasons.push({ dimension: 'cpuProcess', value: top.cpu, threshold: t.cpuProcess });
   }
-  if (snap.memory.freePercent <= t.memoryFree) {
-    reasons.push({ dimension: 'memoryFree', value: snap.memory.freePercent, threshold: t.memoryFree });
+  const memUsed = 100 - snap.memory.freePercent;
+  if (memUsed >= t.memoryUsed) {
+    reasons.push({ dimension: 'memoryUsed', value: memUsed, threshold: t.memoryUsed });
   }
   for (const v of snap.disk.volumes) {
     if (v.usedPercent >= t.diskUsed) {

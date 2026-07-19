@@ -10,10 +10,6 @@
 
 # Resource Monitor
 
-> 🛡️ **Custodian** — the whole-machine caretaker: watches your Mac's resources, turns the numbers into checkable cleanup actions, and safely runs the ones you pick.
-
-> 🧠 **Brain**: GLM-5.2 (powered by z.ai)
-
 > VSCode extension that monitors your whole Mac (CPU / memory / disk / GPU), uses AI to turn the numbers into checkable cleanup actions (uninstall an extension, clear a cache, kill a process), and executes the ones you pick — safely.
 
 [简体中文](README_cn.md)

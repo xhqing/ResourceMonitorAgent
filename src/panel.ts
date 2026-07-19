@@ -67,6 +67,11 @@ export class PanelController implements vscode.WebviewViewProvider {
     this.view?.webview.postMessage({ type: 'suggestions', items });
   }
 
+  // 把诊断阶段（采集 / 分析 / 空闲）推给面板，由前端切换按钮文案与禁用态。
+  setDiagnosing(state: 'idle' | 'sampling' | 'analyzing') {
+    this.view?.webview.postMessage({ type: 'diagnoseStatus', state });
+  }
+
   private handleMessage(msg: PanelMessage) {
     const cfg = vscode.workspace.getConfiguration('resourceMonitor');
     switch (msg.type) {
@@ -91,7 +96,6 @@ export class PanelController implements vscode.WebviewViewProvider {
       .map((cmd) => this.suggestions.find((s) => s.command === cmd))
       .filter((s): s is CleanerSuggestion => Boolean(s));
     if (picked.length === 0) {
-      void vscode.window.showWarningMessage('没有勾选任何清理项。');
       return;
     }
 
@@ -101,8 +105,6 @@ export class PanelController implements vscode.WebviewViewProvider {
     }
 
     this.view?.webview.postMessage({ type: 'cleanResults', results });
-    const ok = results.filter((r) => r.success).length;
-    void vscode.window.showInformationMessage(`清理完成：成功 ${ok}/${results.length} 项，详见面板。`);
   }
 }
 

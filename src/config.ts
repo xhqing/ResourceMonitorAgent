@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 
 // 阈值配置：GUI 面板上用户可调，每项带「取值范围 / 建议值 / 比较方向 / 说明」。
-// above=true 表示「高于阈值告警」，above=false 表示「低于阈值告警」（只有内存可用率是低于）。
+// above=true 表示「高于阈值告警」，above=false 表示「低于阈值告警」。当前各维度均为高于告警。
 export interface Thresholds {
   cpuTotal: number; // 整机 CPU%
   cpuProcess: number; // 单进程 CPU%
-  memoryFree: number; // 内存可用率%
+  memoryUsed: number; // 内存使用率%
   diskUsed: number; // 磁盘使用率%
 }
 
@@ -29,9 +29,9 @@ export const THRESHOLD_META: Record<keyof Thresholds, ThresholdMeta> = {
     min: 10, max: 800, suggest: 80, above: true, label: '单进程 CPU', unit: '%',
     desc: '单个进程的 CPU%（多核可 >100）。某进程吃满近一个核即可能造成卡顿。',
   },
-  memoryFree: {
-    min: 5, max: 50, suggest: 20, above: false, label: '内存可用率', unit: '%',
-    desc: '可用内存占比，低于此值告警。macOS 激进缓存，以此为准，勿看 PhysMem unused。',
+  memoryUsed: {
+    min: 50, max: 95, suggest: 80, above: true, label: '内存使用率', unit: '%',
+    desc: '内存使用率，高于此值告警。macOS 激进缓存，可用率以 memory_pressure 为准、勿看 PhysMem unused。',
   },
   diskUsed: {
     min: 50, max: 98, suggest: 85, above: true, label: '磁盘使用率', unit: '%',
@@ -71,7 +71,7 @@ export function readConfig(): MonitorConfig {
     thresholds: {
       cpuTotal: c.get<number>('threshold.cpuTotal', THRESHOLD_META.cpuTotal.suggest),
       cpuProcess: c.get<number>('threshold.cpuProcess', THRESHOLD_META.cpuProcess.suggest),
-      memoryFree: c.get<number>('threshold.memoryFree', THRESHOLD_META.memoryFree.suggest),
+      memoryUsed: c.get<number>('threshold.memoryUsed', THRESHOLD_META.memoryUsed.suggest),
       diskUsed: c.get<number>('threshold.diskUsed', THRESHOLD_META.diskUsed.suggest),
     },
     ai: {

@@ -18,7 +18,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.registerWebviewViewProvider('resourceMonitor.entry', panel),
   );
 
-  const m = new Monitor(() => panel?.show(monitor?.lastSnapshot));
+  const m = new Monitor(
+    (snap) => panel?.show(snap),
+    () => void panel?.reveal(),
+  );
   monitor = m;
   context.subscriptions.push(m);
 
@@ -69,33 +72,26 @@ async function diagnose() {
     return;
   }
 
-  await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: 'Resource Monitor 诊断', cancellable: false },
-    async (progress) => {
-      progress.report({ message: '采集资源数据…' });
-      let snap;
-      try {
-        snap = await mon.sampleOnce();
-      } catch (e) {
-        void vscode.window.showErrorMessage('采集失败：' + (e as Error).message);
-        return;
-      }
-      pan.show(snap);
+  pan.setDiagnosing('sampling');
+  let snap;
+  try {
+    snap = await mon.sampleOnce();
+  } catch (e) {
+    pan.setDiagnosing('idle');
+    void vscode.window.showErrorMessage('采集失败：' + (e as Error).message);
+    return;
+  }
+  pan.show(snap);
 
-      progress.report({ message: 'AI 分析中…' });
-      try {
-        const items = await analyzeWithAI(ctx, snap);
-        pan.setSuggestions(items);
-        const verdict =
-          items.length > 0
-            ? `AI 判断：建议清理（${items.length} 项），详见面板。`
-            : 'AI 判断：当前资源状态良好，暂无需清理。';
-        void vscode.window.showInformationMessage(verdict);
-      } catch (e) {
-        void vscode.window.showErrorMessage('AI 诊断失败：' + (e as Error).message);
-      }
-    },
-  );
+  pan.setDiagnosing('analyzing');
+  try {
+    const items = await analyzeWithAI(ctx, snap);
+    pan.setSuggestions(items);
+  } catch (e) {
+    void vscode.window.showErrorMessage('AI 诊断失败：' + (e as Error).message);
+  } finally {
+    pan.setDiagnosing('idle');
+  }
 }
 
 export function deactivate() {

@@ -8,9 +8,13 @@ export class Monitor {
   private timer: NodeJS.Timeout | undefined;
   private readonly statusItem: vscode.StatusBarItem;
   private readonly alerter: Alerter;
+  private readonly onSnapshot: (snap: Snapshot) => void;
   lastSnapshot: Snapshot | undefined;
 
-  constructor(onShowPanel: () => void) {
+  // onSnapshot：每轮采集成功后回调，用于把最新快照推给侧边栏面板（与告警无关，保证面板始终有数据）。
+  // onAlertReveal：告警弹窗点「查看详情」时回调，用于展开 / 聚焦侧边栏面板让用户看到详情。
+  constructor(onSnapshot: (snap: Snapshot) => void, onAlertReveal: () => void) {
+    this.onSnapshot = onSnapshot;
     this.statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     this.statusItem.command = 'resourceMonitor.openPanel';
     this.statusItem.tooltip = 'Resource Monitor：点击打开资源面板';
@@ -18,7 +22,7 @@ export class Monitor {
     this.statusItem.show();
 
     const cfg = readConfig();
-    this.alerter = new Alerter(cfg.alertCooldownSec, onShowPanel);
+    this.alerter = new Alerter(cfg.alertCooldownSec, onAlertReveal);
   }
 
   start() {
@@ -47,6 +51,7 @@ export class Monitor {
       this.alerter.setCooldown(cfg.alertCooldownSec);
       const snap = await takeSnapshot();
       this.lastSnapshot = snap;
+      this.onSnapshot(snap);
       const reasons = evaluateAlerts(snap, cfg.thresholds);
       this.updateStatus(snap, reasons);
       if (reasons.length > 0) {
