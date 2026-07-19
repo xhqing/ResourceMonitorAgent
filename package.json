@@ -2,7 +2,7 @@
   "name": "resource-monitor",
   "displayName": "Resource Monitor",
   "description": "实时监控整机 CPU、内存、磁盘、GPU，AI 给出可勾选的清理建议并一键执行。",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "xhqing",
   "license": "MIT",
   "repository": {

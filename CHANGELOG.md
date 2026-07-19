@@ -4,6 +4,15 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.1] - 2026-07-19
+
+修复扩展采集时反复在 Dock 弹出 VSCode 图标的问题。
+
+### Fixed
+
+- **采集方式改用 ps**：VSCode 扩展子进程的采集从 `code --status` 改为 `ps -axo %cpu,pid,command`。`code` CLI 每次会启动 VSCode.app bundle 内的主可执行文件，被 macOS LaunchServices 登记为「VSCode.app 被激活」，从而刷新 Dock「最近使用的应用程序」——多窗口并行轮询时会反复弹出 VSCode 图标。`ps` 只读进程列表、不启动任何 .app bundle，根治该问题，且输出比 `code --status` 更稳定（后者 Mem 列在本机已知有格式 bug）。
+- **过滤系统扩展**：ps 全进程列表中只认 VSCode 扩展子进程（命令行带 `Visual Studio Code` 应用路径或 `.vscode/extensions`），排除 macOS 系统扩展（`.appex` / `.dext` 等，命令行带 `/System/Library/.../extensions/`）。
+
 ## [0.2.0] - 2026-07-18
 
 资源监控面板改为侧边栏常驻视图，点活动栏图标即展开，无需再走「打开」按钮。
